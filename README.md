@@ -45,7 +45,8 @@ Untuk peluncuran komersial skala besar, tambahkan payment/subscription, rate lim
 
 ## Knowledge Base
 V5.1 menyediakan ruang KB per workspace. Jangan mengklaim isi SNI/ISPO/RSPO sebagai sumber resmi hanya karena judul dokumen ditulis user. Masukkan dokumen resmi yang memang dimiliki/diizinkan untuk digunakan, lalu simpan sumber dan versi dokumen.
-Deploy ulang konfigurasi Supabase
 
 ## AI safety
 AI adalah decision support. Foto tunggal bukan diagnosis final. Dosis pupuk/pestisida, tindakan kimia, dan keputusan sertifikasi harus merujuk pada SOP/dokumen yang relevan dan diverifikasi tenaga berwenang.
+
+Deploy ulang konfigurasi Supabase
