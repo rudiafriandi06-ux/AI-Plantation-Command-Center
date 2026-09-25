@@ -1,0 +1,1 @@
+{"name":"ai-agronomy-engine-v5-1","private":true,"type":"module","dependencies":{"@supabase/supabase-js":"^2.57.0","openai":"^5.12.2"}}
