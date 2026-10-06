@@ -25,34 +25,7 @@
 
 <section id="analysis" class="page hidden"><div class="pagehead"><div><h1>AI Analysis + Foto</h1><p>Upload foto → screening → risk → rekomendasi → action.</p></div></div><div class="grid2"><div class="card"><label>Blok</label><select id="aBlock"></select><label>Parameter</label><select id="aParam"><option>Tanaman</option><option>Tanah</option><option>Curah Hujan</option><option>Pemupukan</option><option>Hama/Penyakit</option><option>Nursery</option></select><label>Temuan</label><textarea id="aFinding" rows="5" placeholder="Tuliskan temuan lapangan..."></textarea><label>Foto</label><input id="aPhoto" type="file" accept="image/*" capture="environment"><img id="aPreview" class="preview hidden"><button class="primary full" onclick="analyze()">Analisis</button><div id="analysisMsg" class="msg"></div></div><div class="card"><h2>Hasil AI</h2><div id="analysisResult" class="airesult">Belum ada analisis.</div></div></div></section>
 
-<section id="blocks" class="page hidden">
-  <div class="pagehead">
-    <div>
-      <h1>Database Blok</h1>
-      <p>Master blok milik workspace.</p>
-    </div>
-
-    <button class="primary" onclick="newBlock()">+ Blok</button>
-  </div>
-
-  <div id="blockForm" class="card hidden">
-    <div class="formgrid">
-      <input id="bDiv" placeholder="Divisi">
-      <input id="bCode" placeholder="Blok *">
-      <input id="bArea" type="number" step=".01" placeholder="Luas Ha">
-      <input id="bYear" type="number" placeholder="Tahun Tanam">
-      <input id="bClass" placeholder="Klasifikasi">
-      <input id="bRain" type="number" placeholder="Curah hujan mm">
-      <input id="bPh" type="number" step=".01" placeholder="pH">
-      <input id="bSoil" placeholder="Status tanah">
-      <input id="bPest" placeholder="Hama/Penyakit">
-      <input id="bAttack" type="number" step=".1" placeholder="Serangan %">
-    </div>
-
-    <button class="primary" onclick="saveBlock()">Simpan</button>
-  </div>
-
-  <div id="blocksTable" class="card tablewrap"></div>
+<section id="blocks" class="page hidden"><div class="pagehead"><div><h1>Database Blok</h1><p>Master blok milik workspace.</p></div><button class="primary" onclick="newBlock()">+ Blok</button></div><div id="blockForm" class="card hidden"><div class="formgrid"><input id="bDiv" placeholder="Divisi"><input id="bCode" placeholder="Blok *"><input id="bArea" type="number" step=".01" placeholder="Luas Ha"><input id="bYear" type="number" placeholder="Tahun Tanam"><input id="bClass" placeholder="Klasifikasi"><input id="bRain" type="number" placeholder="Curah hujan mm"><input id="bPh" type="number" step=".01" placeholder="pH"><input id="bSoil" placeholder="Status tanah"><input id="bPest" placeholder="Hama/Penyakit"><input id="bAttack" type="number" step=".1" placeholder="Serangan %"></div><button class="primary" onclick="saveBlock()">Simpan</button></div><div id="blocksTable" class="card tablewrap"></div>
 </section>
 
 <section id="maintenance" class="page hidden"><div class="pagehead"><div><h1>Pemeriksaan Pemeliharaan</h1><p>Format inti mengikuti workbook V4.</p></div></div><div class="card"><div class="formgrid"><input id="mDate" type="date"><input id="mDiv" placeholder="Divisi"><input id="mBlock" placeholder="Blok *"><input id="mYear" type="number" placeholder="Tahun Tanam"><input id="mClass" placeholder="Klasifikasi"><input id="mArea" type="number" step=".01" placeholder="Luas Ha"><input id="mSoil" placeholder="Kondisi Tanah"><input id="mPh" type="number" step=".01" placeholder="pH"><input id="mMoist" placeholder="Kelembapan"><input id="mRain" type="number" placeholder="Curah hujan"><input id="mRainDays" type="number" placeholder="Hari hujan"><input id="mFert" placeholder="Jenis Pupuk"><input id="mDose" type="number" step=".001" placeholder="Dosis kg/pokok"><input id="mReal" type="number" step=".01" placeholder="Realisasi kg"><input id="mPest" placeholder="Hama/Penyakit"><input id="mAttack" type="number" step=".1" placeholder="Serangan %"><input id="mControl" placeholder="Status Pengendalian"><input id="mAction" placeholder="Tindakan"><input id="mPic" placeholder="PIC"><input id="mNote" placeholder="Keterangan"></div><button class="primary" onclick="saveMaintenance()">Simpan</button><div id="maintMsg" class="msg"></div></div></section>
