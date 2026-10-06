@@ -1,52 +1,151 @@
-# AI Agronomy Engine V5.1 — PUBLIC PRODUCTION
+# AI Agronomy Engine V5.1 — Public Production
 
-V5.1 adalah upgrade dari V5 untuk penggunaan publik multi-user.
+**AI Agronomy Engine V5.1** adalah platform digital **AI-powered agronomy decision support** untuk pengelolaan perkebunan kelapa sawit secara terstruktur, berbasis data, evidence, dan knowledge base perusahaan.
 
-## Yang sudah ada
-- Landing page publik
-- Registrasi/login Supabase Auth
-- Workspace otomatis untuk setiap user
-- Isolasi data antar workspace
-- PostgreSQL database
-- RLS
-- Evidence storage
-- AI chat
-- AI photo analysis
-- Risk engine
-- Knowledge Base per workspace
-- Database blok
-- Pemeriksaan pemeliharaan
-- Action Center
-- Tidak ada angka dashboard simulasi
-- Tidak memakai localStorage sebagai database
+V5.1 dirancang sebagai **public production multi-user application**, dengan setiap pengguna memiliki workspace terisolasi sehingga data blok, pemeriksaan, evidence, knowledge base, dan aktivitas operasional tidak tercampur dengan pengguna lain.
 
-## Deploy
-1. Buat project Supabase.
-2. Jalankan `supabase/schema.sql` di SQL Editor.
-3. Buat Netlify site dari folder/repository ini.
-4. Set environment variables Netlify:
-   - SUPABASE_URL
-   - SUPABASE_ANON_KEY
-   - SUPABASE_SERVICE_ROLE_KEY
-   - OPENAI_API_KEY
-   - OPENAI_MODEL (opsional)
-5. Redeploy.
-6. Buka URL publik.
-7. Daftar akun baru.
-8. Masuk.
-9. Tambahkan blok / data pemeriksaan.
-10. Tambahkan SOP/GAP perusahaan ke Knowledge Base.
-11. Gunakan Tanya AI atau AI Analysis + foto.
+## Core Capabilities
 
-## Keamanan
-SERVICE_ROLE_KEY dan OPENAI_API_KEY hanya berada di Netlify Functions. Jangan dimasukkan ke HTML/JavaScript.
-RLS tetap dipasang di database sebagai lapisan otorisasi.
-Untuk peluncuran komersial skala besar, tambahkan payment/subscription, rate limiting, email verification, CAPTCHA/bot protection, audit log, backup, observability, dan review keamanan.
+* **Public Landing Page** — akses aplikasi melalui URL publik.
+* **Supabase Authentication** — registrasi dan login pengguna.
+* **Multi-Workspace Architecture** — setiap pengguna memiliki workspace sendiri.
+* **Row Level Security (RLS)** — isolasi dan kontrol akses data pada level PostgreSQL.
+* **Block Database** — pengelolaan data blok perkebunan.
+* **Maintenance Inspection** — pencatatan dan pemeriksaan kondisi pemeliharaan.
+* **Evidence Storage** — penyimpanan foto dan evidence pemeriksaan.
+* **AI Chat** — konsultasi agronomi berbasis AI.
+* **AI Photo Analysis** — analisis awal kondisi tanaman berdasarkan foto.
+* **Risk Engine** — identifikasi risiko, potensi dampak, prioritas, dan tindakan.
+* **Workspace Knowledge Base** — penyimpanan SOP, GAP, dan dokumen referensi perusahaan.
+* **Action Center** — mengubah hasil analisis menjadi daftar tindakan yang dapat ditindaklanjuti.
+* **Data-Driven Dashboard** — dashboard menggunakan data aktual, bukan angka simulasi.
+* **No LocalStorage Database** — data operasional disimpan pada PostgreSQL/Supabase.
+
+## Production Architecture
+
+```text
+Public Web Application
+        │
+        ▼
+     Netlify
+        │
+        ├── Frontend
+        │
+        └── Netlify Functions
+                │
+                ├── Supabase Auth
+                ├── Supabase PostgreSQL
+                ├── Supabase Storage
+                └── OpenAI API
+```
+
+### Security Model
+
+V5.1 menggunakan beberapa lapisan keamanan:
+
+1. **Supabase Auth** untuk autentikasi pengguna.
+2. **PostgreSQL RLS** untuk membatasi akses data berdasarkan workspace.
+3. **Workspace isolation** untuk mencegah pengguna mengakses data workspace lain.
+4. **Server-side secrets** untuk credential sensitif.
+5. `SUPABASE_SERVICE_ROLE_KEY` dan `OPENAI_API_KEY` **tidak pernah ditempatkan di frontend**.
+6. Data operasional tidak bergantung pada `localStorage`.
+
+## Environment Variables
+
+Konfigurasi production dilakukan melalui environment variables pada Netlify:
+
+```text
+SUPABASE_URL
+SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY
+OPENAI_API_KEY
+OPENAI_MODEL
+```
+
+`SUPABASE_SERVICE_ROLE_KEY` dan `OPENAI_API_KEY` hanya digunakan pada **Netlify Functions/server-side environment**.
 
 ## Knowledge Base
-V5.1 menyediakan ruang KB per workspace. Jangan mengklaim isi SNI/ISPO/RSPO sebagai sumber resmi hanya karena judul dokumen ditulis user. Masukkan dokumen resmi yang memang dimiliki/diizinkan untuk digunakan, lalu simpan sumber dan versi dokumen.
 
-## AI safety
-AI adalah decision support. Foto tunggal bukan diagnosis final. Dosis pupuk/pestisida, tindakan kimia, dan keputusan sertifikasi harus merujuk pada SOP/dokumen yang relevan dan diverifikasi tenaga berwenang.
+Knowledge Base tersedia secara terpisah untuk setiap workspace.
 
-Deploy ulang konfigurasi Supabase
+Pengguna dapat memasukkan:
+
+* SOP perusahaan
+* GAP perkebunan
+* standar internal
+* instruksi kerja
+* dokumen teknis
+* referensi agronomi yang memiliki hak penggunaan
+
+Aplikasi **tidak menganggap sebuah dokumen sebagai sumber resmi hanya berdasarkan nama atau judul yang dimasukkan pengguna**.
+
+Untuk setiap dokumen, sebaiknya disimpan:
+
+* nama dokumen
+* sumber
+* nomor/versi
+* tanggal berlaku
+* status dokumen
+* ruang lingkup penggunaan
+
+## AI Agronomy Safety
+
+AI Agronomy Engine merupakan **decision-support system**, bukan pengganti agronomist atau tenaga berwenang.
+
+Analisis foto digunakan sebagai **indikasi awal**, bukan diagnosis final.
+
+Keputusan terkait:
+
+* dosis pupuk
+* aplikasi pestisida
+* tindakan kimia
+* pengendalian organisme pengganggu tanaman
+* keputusan sertifikasi
+* tindakan operasional berisiko tinggi
+
+harus mengacu pada SOP/dokumen yang relevan dan diverifikasi oleh personel yang berwenang.
+
+## Deployment
+
+1. Buat project Supabase.
+2. Jalankan `supabase/schema.sql` pada Supabase SQL Editor.
+3. Deploy repository ke Netlify.
+4. Masukkan environment variables production.
+5. Redeploy Netlify.
+6. Buka URL aplikasi publik.
+7. Registrasikan user baru.
+8. Login.
+9. Buat dan kelola workspace/blok.
+10. Masukkan data pemeriksaan.
+11. Tambahkan SOP/GAP perusahaan ke Knowledge Base.
+12. Gunakan **Tanya AI**, **AI Photo Analysis**, **Risk Engine**, dan **Action Center**.
+
+## Production Roadmap
+
+Untuk penggunaan komersial dengan skala pengguna yang lebih besar, sistem perlu dilengkapi dengan:
+
+* subscription/payment system
+* rate limiting
+* email verification
+* CAPTCHA/bot protection
+* audit logging
+* automated backup
+* monitoring & observability
+* error tracking
+* security review
+* database performance optimization
+* disaster recovery
+
+## Project Status
+
+**Version:** V5.1
+**Environment:** Public Production
+**Architecture:** Multi-user / Multi-workspace
+**Database:** PostgreSQL / Supabase
+**Authentication:** Supabase Auth
+**Backend:** Netlify Functions
+**AI:** OpenAI API
+**Storage:** Supabase Storage
+**Authorization:** PostgreSQL RLS
+
+> **AI Agronomy Engine V5.1 — From field evidence to agronomy decision support and actionable field management.**
