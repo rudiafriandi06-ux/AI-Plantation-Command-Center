@@ -1,4 +1,5 @@
 let sb,session,blocks=[],knowledge=[];
+let editingBlockId = null;
 const $=x=>document.getElementById(x);
 async function config(){const r=await fetch('/api/config');return r.json()}
 async function boot(){try{const c=await config();sb=window.supabase.createClient(c.url,c.anon);const {data}=await sb.auth.getSession();if(data.session)enter(data.session);sb.auth.onAuthStateChange((_e,s)=>s?enter(s):showLanding())}catch(e){console.error(e)}}
@@ -13,10 +14,169 @@ async function logout(){await sb.auth.signOut()}
 async function api(path,opt={}){const h=opt.headers||{};h.Authorization=`Bearer ${session.access_token}`;if(opt.body && !(opt.body instanceof FormData))h['Content-Type']='application/json';const r=await fetch(path,{...opt,headers:h});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.error||`HTTP ${r.status}`);return d}
 document.querySelectorAll('.nav').forEach(n=>n.onclick=()=>{document.querySelectorAll('.nav').forEach(x=>x.classList.remove('active'));n.classList.add('active');document.querySelectorAll('.page').forEach(x=>x.classList.add('hidden'));$(n.dataset.page).classList.remove('hidden');if(n.dataset.page==='actions')loadActions();if(n.dataset.page==='knowledge')loadKB();if(n.dataset.page==='settings')loadSettings()});
 async function refresh(){try{const d=await api('/api/state');blocks=d.blocks||[];knowledge=d.knowledge||[];$('kBlocks').textContent=blocks.length;$('kHa').textContent=blocks.reduce((s,b)=>s+Number(b.area_ha||0),0).toFixed(1);$('kMaint').textContent=d.maintenance_count||0;$('kOpen').textContent=d.open_actions||0;$('kHigh').textContent=d.high_risk||0;$('workspaceName').textContent=d.workspace?.name||'';$('planBadge').textContent=d.workspace?.plan||'PUBLIC';$('dashActions').innerHTML=(d.actions||[]).slice(0,8).map(a=>`<div class="item"><b>${esc(a.priority)}</b> · ${esc(a.block_code||'')}</div><div class="muted">${esc(a.finding||'')}</div>`).join('')||'<div class="muted">Belum ada action.</div>';$('health').innerHTML=`<p>API: <b>ONLINE</b></p><p>Database: <b>CONNECTED</b></p><p>AI: <b>${d.ai_enabled?'READY':'NEED CONFIG'}</b></p><p>Knowledge entries: <b>${knowledge.length}</b></p>`;renderBlocks();fillBlockSelectors()}catch(e){$('health').textContent=e.message}}
-function renderBlocks(){$('blocksTable').innerHTML=blocks.length?`<table class="table"><tr><th>Blok</th><th>Divisi</th><th>Ha</th><th>Tahun</th><th>Klasifikasi</th><th>pH</th><th>Tanah</th><th>Serangan</th></tr>${blocks.map(b=>`<tr><td><b>${esc(b.block_code)}</b></td><td>${esc(b.division||'')}</td><td>${n(b.area_ha)}</td><td>${esc(b.planting_year||'')}</td><td>${esc(b.classification||'')}</td><td>${n(b.avg_ph)}</td><td>${esc(b.soil_status||'')}</td><td>${n(b.avg_attack_pct)}%</td></tr>`).join('')}</table>`:'<div class="muted">Belum ada blok.</div>'}
+function renderBlocks(){
+  $('blocksTable').innerHTML = blocks.length
+    ? `<table class="table">
+        <tr>
+          <th>Blok</th>
+          <th>Divisi</th>
+          <th>Ha</th>
+          <th>Tahun</th>
+          <th>Klasifikasi</th>
+          <th>pH</th>
+          <th>Tanah</th>
+          <th>Serangan</th>
+          <th>Aksi</th>
+        </tr>
+        ${blocks.map(b=>`
+          <tr>
+            <td><b>${esc(b.block_code)}</b></td>
+            <td>${esc(b.division||'')}</td>
+            <td>${n(b.area_ha)}</td>
+            <td>${esc(b.planting_year||'')}</td>
+            <td>${esc(b.classification||'')}</td>
+            <td>${n(b.avg_ph)}</td>
+            <td>${esc(b.soil_status||'')}</td>
+            <td>${n(b.avg_attack_pct)}%</td>
+            <td>
+              <button type="button"
+                class="secondary"
+                onclick="editBlock('${b.id}')">
+                Edit
+              </button>
+              <button type="button"
+                class="danger"
+                onclick="deleteBlock('${b.id}')">
+                Hapus
+              </button>
+            </td>
+          </tr>
+        `).join('')}
+      </table>`
+    : '<div class="muted">Belum ada blok.</div>';
+}
 function fillBlockSelectors(){['aBlock','chatBlock'].forEach(id=>{const s=$(id);if(!s)return;s.innerHTML=(id==='chatBlock'?'<option value="">Tanpa blok tertentu</option>':'')+blocks.map(b=>`<option value="${b.id}">${esc(b.block_code)} — ${esc(b.division||'')}</option>`).join('')})}
-function newBlock(){$('blockForm').classList.remove('hidden')}
-async function saveBlock(){try{await api('/api/blocks',{method:'POST',body:JSON.stringify({division:$('bDiv').value,block_code:$('bCode').value,area_ha:$('bArea').value,planting_year:$('bYear').value,classification:$('bClass').value,rainfall_mm:$('bRain').value,avg_ph:$('bPh').value,soil_status:$('bSoil').value,dominant_pest:$('bPest').value,avg_attack_pct:$('bAttack').value})});$('blockForm').classList.add('hidden');refresh()}catch(e){alert(e.message)}}
+function newBlock(){
+  editingBlockId = null;
+
+  $('bDiv').value = '';
+  $('bCode').value = '';
+  $('bArea').value = '';
+  $('bYear').value = '';
+  $('bClass').value = '';
+  $('bRain').value = '';
+  $('bPh').value = '';
+  $('bSoil').value = '';
+  $('bPest').value = '';
+  $('bAttack').value = '';
+
+  $('blockForm').classList.remove('hidden');
+}
+async function saveBlock(){
+  try{
+    const body = {
+      division: $('bDiv').value.trim(),
+      block_code: $('bCode').value.trim(),
+      area_ha: $('bArea').value || null,
+      planting_year: $('bYear').value || null,
+      classification: $('bClass').value.trim(),
+      rainfall_mm: $('bRain').value || null,
+      avg_ph: $('bPh').value || null,
+      soil_status: $('bSoil').value.trim(),
+      dominant_pest: $('bPest').value.trim(),
+      avg_attack_pct: $('bAttack').value || null
+    };
+
+    if(!body.block_code){
+      alert('Kode Blok wajib diisi.');
+      return;
+    }
+
+    if(editingBlockId){
+      await api('/api/blocks/'+editingBlockId,{
+        method:'PATCH',
+        body:JSON.stringify(body)
+      });
+
+      alert('Data blok berhasil diperbarui.');
+    }else{
+      await api('/api/blocks',{
+        method:'POST',
+        body:JSON.stringify(body)
+      });
+
+      alert('Blok berhasil ditambahkan.');
+    }
+
+    editingBlockId = null;
+    $('blockForm').classList.add('hidden');
+
+    await refresh();
+
+  }catch(e){
+    alert('Gagal menyimpan blok: '+e.message);
+  }
+}
+async function editBlock(id){
+  try{
+    const b = blocks.find(x=>String(x.id)===String(id));
+
+    if(!b){
+      alert('Data blok tidak ditemukan.');
+      return;
+    }
+
+    editingBlockId = id;
+
+    $('bDiv').value = b.division ?? '';
+    $('bCode').value = b.block_code ?? '';
+    $('bArea').value = b.area_ha ?? '';
+    $('bYear').value = b.planting_year ?? '';
+    $('bClass').value = b.classification ?? '';
+    $('bRain').value = b.rainfall_mm ?? '';
+    $('bPh').value = b.avg_ph ?? '';
+    $('bSoil').value = b.soil_status ?? '';
+    $('bPest').value = b.dominant_pest ?? '';
+    $('bAttack').value = b.avg_attack_pct ?? '';
+
+    $('blockForm').classList.remove('hidden');
+
+    window.scrollTo({
+      top: $('blockForm').getBoundingClientRect().top + window.scrollY - 80,
+      behavior: 'smooth'
+    });
+
+  }catch(e){
+    alert('Gagal membuka data blok: '+e.message);
+  }
+}
+async function deleteBlock(id){
+  try{
+    const b = blocks.find(x=>String(x.id)===String(id));
+
+    if(!b){
+      alert('Data blok tidak ditemukan.');
+      return;
+    }
+
+    const ok = confirm(
+      `Hapus blok "${b.block_code}"?\n\nData yang sudah dihapus tidak dapat dikembalikan.`
+    );
+
+    if(!ok) return;
+
+    await api('/api/blocks/'+id,{
+      method:'DELETE'
+    });
+
+    alert(`Blok ${b.block_code} berhasil dihapus.`);
+
+    await refresh();
+
+  }catch(e){
+    alert('Gagal menghapus blok: '+e.message);
+  }
+}
 async function saveMaintenance(){try{const b={inspection_date:$('mDate').value||new Date().toISOString().slice(0,10),division:$('mDiv').value,block_code:$('mBlock').value,planting_year:$('mYear').value,classification:$('mClass').value,area_ha:$('mArea').value,soil_condition:$('mSoil').value,ph:$('mPh').value,moisture:$('mMoist').value,rainfall_mm:$('mRain').value,rain_days:$('mRainDays').value,fertilizer_type:$('mFert').value,dose_kg_per_palm:$('mDose').value,realization_kg:$('mReal').value,pest_disease:$('mPest').value,attack_pct:$('mAttack').value,control_status:$('mControl').value,control_action:$('mAction').value,pic:$('mPic').value,note:$('mNote').value};const d=await api('/api/maintenance',{method:'POST',body:JSON.stringify(b)});$('maintMsg').textContent='Tersimpan: '+d.id;refresh()}catch(e){$('maintMsg').textContent=e.message}}
 $('aPhoto').onchange=e=>{const f=e.target.files[0];if(f){$('aPreview').src=URL.createObjectURL(f);$('aPreview').classList.remove('hidden')}}
 async function analyze(){try{$('analysisMsg').textContent='Menganalisis...';const fd=new FormData();fd.append('block_id',$('aBlock').value);fd.append('parameter',$('aParam').value);fd.append('finding',$('aFinding').value);if($('aPhoto').files[0])fd.append('image',$('aPhoto').files[0]);const d=await api('/api/analyze',{method:'POST',body:fd});showAnalysis(d);$('analysisMsg').textContent='Selesai. Action dibuat.';refresh()}catch(e){$('analysisMsg').textContent=e.message}}
