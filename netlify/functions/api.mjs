@@ -15,6 +15,61 @@ if(p==="/api/blocks"&&req.method==="POST"){const x=await req.json();if(!x.block_
 if(p==="/api/maintenance"&&req.method==="POST"){const x=await req.json();if(!x.block_code)throw Error("Blok wajib diisi");const {data,error}=await admin.from("maintenance_records").insert({...x,workspace_id:ws.id,owner_id:user.id}).select().single();if(error)throw Error(error.message);return j(data)}
 if(p==="/api/actions"&&req.method==="GET"){const {data,error}=await admin.from("actions").select("*").eq("workspace_id",ws.id).order("created_at",{ascending:false});if(error)throw Error(error.message);return j({actions:data||[]})}
 if(p.startsWith("/api/actions/")&&req.method==="PATCH"){const id=p.split("/").pop();const x=await req.json();const {data,error}=await admin.from("actions").update(x).eq("id",id).eq("workspace_id",ws.id).select().single();if(error)throw Error(error.message);return j(data)}
+if(p.startsWith("/api/blocks/")&&req.method==="PATCH"){
+  const id=p.split("/").pop();
+  const x=await req.json();
+
+  if(!id)throw Error("ID blok tidak ditemukan");
+  if(!x.block_code)throw Error("Blok wajib diisi");
+
+  const {data,error}=await admin
+    .from("blocks")
+    .update({
+      division:x.division||null,
+      block_code:x.block_code,
+      area_ha:x.area_ha||null,
+      planting_year:x.planting_year||null,
+      classification:x.classification||null,
+      rainfall_mm:x.rainfall_mm||null,
+      avg_ph:x.avg_ph||null,
+      soil_status:x.soil_status||null,
+      dominant_pest:x.dominant_pest||null,
+      avg_attack_pct:x.avg_attack_pct||null
+    })
+    .eq("id",id)
+    .eq("workspace_id",ws.id)
+    .select()
+    .single();
+
+  if(error)throw Error(error.message);
+  if(!data)throw Error("Blok tidak ditemukan atau bukan milik workspace.");
+
+  return j(data);
+}
+
+if(p.startsWith("/api/blocks/")&&req.method==="DELETE"){
+  const id=p.split("/").pop();
+
+  if(!id)throw Error("ID blok tidak ditemukan");
+
+  const {data,error}=await admin
+    .from("blocks")
+    .delete()
+    .eq("id",id)
+    .eq("workspace_id",ws.id)
+    .select()
+    .single();
+
+  if(error)throw Error(error.message);
+  if(!data)throw Error("Blok tidak ditemukan atau bukan milik workspace.");
+
+  return j({
+    success:true,
+    message:"Blok berhasil dihapus.",
+    id:data.id
+  });
+}
+
 if(p==="/api/knowledge"&&req.method==="GET"){const {data,error}=await admin.from("knowledge_base").select("*").eq("workspace_id",ws.id).order("created_at",{ascending:false});if(error)throw Error(error.message);return j({knowledge:data||[]})}
 if(p==="/api/knowledge"&&req.method==="POST"){if(!["owner","admin"].includes(ws.role))throw Error("Hanya owner/admin dapat menambah knowledge.");const x=await req.json();if(!x.title||!x.content)throw Error("Judul dan isi wajib.");const {data,error}=await admin.from("knowledge_base").insert({...x,workspace_id:ws.id,created_by:user.id}).select().single();if(error)throw Error(error.message);return j(data)}
 if(p==="/api/chat"&&req.method==="POST"){if(!openai)throw Error("AI belum dikonfigurasi. Tambahkan OPENAI_API_KEY.");const x=await req.json(),kb=await kbFor(ws,x.question||"");let block=null;if(x.block_id){const z=await admin.from("blocks").select("*").eq("id",x.block_id).eq("workspace_id",ws.id).single();block=z.data}const rr=risk(block||{},x.question||"");const resp=await openai.responses.create({model:MODEL,input:[{role:"system",content:prompt(kb)},{role:"user",content:`Pertanyaan: ${x.question}\nBlok: ${JSON.stringify(block)}\nRisk engine: ${JSON.stringify(rr)}\nJawab dalam bahasa Indonesia. Berikan: ringkasan, data yang mendukung, kemungkinan penyebab, tindakan segera yang aman, verifikasi, dan sumber knowledge.`}]});return j({status:"AI RESPONSE",answer:resp.output_text,sources:kb.map(k=>k.title).join(", ")||"Belum ada knowledge workspace"})}
